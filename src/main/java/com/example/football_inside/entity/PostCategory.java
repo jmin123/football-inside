@@ -24,4 +24,3 @@ public class PostCategory {
     @JoinColumn(name = "category_id")
     private Category category;
 }
-

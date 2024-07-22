@@ -1,4 +1,4 @@
-package com.example.football_inside;
+package com.example.football_inside.controller;
 
 import com.example.football_inside.entity.Post;
 import com.example.football_inside.service.PostService;
@@ -20,10 +20,10 @@ public class PostController {
         return ResponseEntity.ok(createdPost);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Post> getPost(@PathVariable Long id) {
-        Post post = postService.getPostById(id);
-        return ResponseEntity.ok(post);
+    @GetMapping("/category/{categoryId}")
+    public ResponseEntity<List<Post>> getPostsByCategory(@PathVariable Long categoryId) {
+        List<Post> posts = postService.getPostsByCategory(categoryId);
+        return ResponseEntity.ok(posts);
     }
 
     @PutMapping("/{id}")
