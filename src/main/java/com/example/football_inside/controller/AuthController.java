@@ -1,7 +1,9 @@
 package com.example.football_inside.controller;
 
+import com.example.football_inside.dto.LoginDto;
 import com.example.football_inside.dto.UserRegistrationDto;
 import com.example.football_inside.entity.User;
+import com.example.football_inside.response.LoginResponse;
 import com.example.football_inside.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +16,19 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/auth")
 public class AuthController {
     private final UserService userService;
+    
+    // 로그인
+    @PostMapping("/login")
+    public ResponseEntity<?> loginUser(@RequestBody LoginDto loginDto) {
+        try {
+            LoginResponse response = userService.loginUser(loginDto.getEmail(), loginDto.getPassword());
+            return ResponseEntity.ok("로그인 성공");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
+    // 회원가입
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody UserRegistrationDto registrationDto) {
         try {

@@ -1,4 +1,4 @@
-package com.example.football_inside.security;
+package com.example.football_inside.service;
 
 import com.example.football_inside.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
-
     private final UserRepository userRepository;
 
     public CustomUserDetailsService(UserRepository userRepository) {

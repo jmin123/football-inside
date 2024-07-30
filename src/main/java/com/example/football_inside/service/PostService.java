@@ -1,15 +1,27 @@
 package com.example.football_inside.service;
 
-import com.example.football_inside.entity.Post;
-
-import java.util.List;
+import com.example.football_inside.dto.PostCreateDto;
+import com.example.football_inside.dto.PostDto;
+import com.example.football_inside.dto.PostUpdateDto;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface PostService {
-    Post createPost(Post post, Long userId);
-    Post getPostById(Long id);
-    List<Post> getAllPosts();
-    Post updatePost(Long id, Post updatedPost, Long userId);
+    PostDto createPost(PostCreateDto postCreateDto, Long userId);
+
+    PostDto getPostById(Long id);
+
+    Page<PostDto> getAllPosts(Pageable pageable);
+
+    PostDto updatePost(Long id, PostUpdateDto postUpdateDto, Long userId);
+
     void deletePost(Long id, Long userId);
-    List<Post> getPostsByUser(Long userId);
-    List<Post> getPostsByCategory(Long categoryId);
+
+    PostDto recommendPost(Long postId, Long userId);
+
+    PostDto unrecommendPost(Long postId, Long userId);
+
+    Page<PostDto> getPostsByUser(Long userId, org.springframework.data.domain.Pageable pageable);
+
+    Page<PostDto> getPostsByCategory(Long categoryId, org.springframework.data.domain.Pageable pageable);
 }
