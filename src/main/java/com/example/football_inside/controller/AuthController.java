@@ -5,25 +5,30 @@ import com.example.football_inside.dto.UserRegistrationDto;
 import com.example.football_inside.entity.User;
 import com.example.football_inside.response.LoginResponse;
 import com.example.football_inside.service.UserService;
+import com.example.football_inside.service.UserServiceImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
-    private final UserService userService;
+    private final UserServiceImpl userService;
     
     // 로그인
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody LoginDto loginDto) {
         try {
             LoginResponse response = userService.loginUser(loginDto.getEmail(), loginDto.getPassword());
-            return ResponseEntity.ok("로그인 성공");
+            log.info("Login successful for user: {}", loginDto.getEmail());
+            return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
+            log.error("Login failed for user: {}", loginDto.getEmail(), e);
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }

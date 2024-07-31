@@ -7,7 +7,9 @@ import com.example.football_inside.entity.Category;
 import com.example.football_inside.entity.User;
 import com.example.football_inside.exception.ResourceNotFoundException;
 import com.example.football_inside.repository.CategoryRepository;
+import com.example.football_inside.security.JwtTokenProvider;
 import com.example.football_inside.service.PostServiceImpl;
+import com.example.football_inside.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -15,42 +17,100 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.PagedModel;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @RestController
 @RequestMapping("/api/posts")
 @RequiredArgsConstructor
 public class PostController {
+    private final UserService userService;
     private final PostServiceImpl postService;
     private final CategoryRepository categoryRepository;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @PostMapping
-    public ResponseEntity<PostDto> createPost(@Valid @RequestBody PostCreateDto post, Authentication authentication) {
-        User user = (User) authentication.getPrincipal();
+    public ResponseEntity<?> createPost(@Valid @RequestBody PostCreateDto post, @RequestHeader("Authorization") String token) {
+        if (token == null || !token.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or missing token");
+        }
+
+        String jwtToken = token.substring(7);
+        if (!jwtTokenProvider.validateToken(jwtToken)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid token");
+        }
+
+        String username = jwtTokenProvider.getUsernameFromJWT(jwtToken);
+        User user = userService.getUserByUsername(username);
+
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found");
+        }
+
         Long userId = user.getId();
         PostDto createdPost = postService.createPost(post, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdPost);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PostDto> getPost(@PathVariable Long id) {
-        return ResponseEntity.ok(postService.getPostById(id));
+    public ResponseEntity<EntityModel<PostDto>> getPost(@PathVariable Long id) {
+        PostDto post = postService.getPostById(id);
+
+        EntityModel<PostDto> resource = EntityModel.of(post);
+
+        resource.add(WebMvcLinkBuilder.linkTo(
+                WebMvcLinkBuilder.methodOn(this.getClass()).getPost(id)
+        ).withSelfRel());
+
+        resource.add(WebMvcLinkBuilder.linkTo(
+                WebMvcLinkBuilder.methodOn(this.getClass()).getAllPosts(null)
+        ).withRel("all-posts"));
+
+        resource.add(WebMvcLinkBuilder.linkTo(
+                WebMvcLinkBuilder.methodOn(this.getClass()).updatePost(id, null, null)
+        ).withRel("update"));
+
+        return ResponseEntity.ok(resource);
     }
 
     @GetMapping
-    public ResponseEntity<Page<PostDto>> getAllPosts(
+    public ResponseEntity<CollectionModel<EntityModel<PostDto>>> getAllPosts(
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(postService.getAllPosts(pageable));
+        Page<PostDto> posts = postService.getAllPosts(pageable);
+
+        List<EntityModel<PostDto>> resources = posts.getContent().stream()
+                .map(post -> EntityModel.of(post,
+                        WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getPost(post.getId())).withSelfRel(),
+                        WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getAllPosts(pageable)).withRel("all-posts")
+                ))
+                .collect(Collectors.toList());
+
+        CollectionModel<EntityModel<PostDto>> result = CollectionModel.of(resources);
+
+        result.add(WebMvcLinkBuilder.linkTo(
+                WebMvcLinkBuilder.methodOn(this.getClass()).getAllPosts(pageable)
+        ).withSelfRel());
+
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/category/{categoryId}")
-    public ResponseEntity<Page<PostDto>> getPostsByCategory(
+    public ResponseEntity<PagedModel<EntityModel<PostDto>>> getPostsByCategory(
             @PathVariable Long categoryId,
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(postService.getPostsByCategory(categoryId, pageable));
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            PagedResourcesAssembler<PostDto> assembler) {
+        Page<PostDto> posts = postService.getPostsByCategory(categoryId, pageable);
+        return ResponseEntity.ok(assembler.toModel(posts));
     }
 
     @GetMapping("/category/name/{categoryName}")
