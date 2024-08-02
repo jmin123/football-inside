@@ -11,6 +11,8 @@ public interface PostService {
 
     PostDto getPostById(Long id);
 
+    Page<PostDto> getPostsByCategoryName(String categoryName, Pageable pageable);
+
     Page<PostDto> getAllPosts(Pageable pageable);
 
     PostDto updatePost(Long id, PostUpdateDto postUpdateDto, Long userId);
@@ -22,6 +24,4 @@ public interface PostService {
     PostDto unrecommendPost(Long postId, Long userId);
 
     Page<PostDto> getPostsByUser(Long userId, org.springframework.data.domain.Pageable pageable);
-
-    Page<PostDto> getPostsByCategory(Long categoryId, org.springframework.data.domain.Pageable pageable);
 }

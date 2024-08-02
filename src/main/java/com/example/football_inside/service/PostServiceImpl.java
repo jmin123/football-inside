@@ -14,6 +14,7 @@ import com.example.football_inside.repository.PostRepository;
 import com.example.football_inside.repository.RecommendationRepository;
 import com.example.football_inside.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,6 +27,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PostServiceImpl implements PostService {
@@ -65,9 +67,31 @@ public class PostServiceImpl implements PostService {
     @Override
     public PostDto getPostById(Long id) {
         Post post = postRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
-        return convertToDTO(post);
+                .orElseThrow(() -> new ResourceNotFoundException("Post not found with id: " + id));
+
+        PostDto dto = convertToDTO(post);
+
+        Set<String> categoryName = post.getCategories().stream()
+                .map(Category::getName)
+                .collect(Collectors.toSet());
+
+        dto.setCategoryName(categoryName);
+
+        return dto;
     }
+
+    @Override
+    public Page<PostDto> getPostsByCategoryName(String categoryName, Pageable pageable) {
+        log.info("Fetching posts for category: {}", categoryName);
+        Category category = categoryRepository.findByNameIgnoreCase(categoryName)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + categoryName));
+
+        Page<Post> posts = postRepository.findByCategoriesContaining(category, pageable);
+        log.info("Found {} posts for category: {}", posts.getTotalElements(), categoryName);
+
+        return posts.map(this::convertToDTO);
+    }
+
 
     @Override
     public Page<PostDto> getAllPosts(Pageable pageable) {
@@ -163,13 +187,6 @@ public class PostServiceImpl implements PostService {
         return postRepository.findByUserId(userId, pageable).map(this::convertToDTO);
     }
 
-    @Override
-    public Page<PostDto> getPostsByCategory(Long categoryId, Pageable pageable) {
-        categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
-        return postRepository.findByCategoriesId(categoryId, pageable).map(this::convertToDTO);
-    }
-
     private PostDto convertToDTO(Post post) {
         PostDto dto = new PostDto();
         dto.setId(post.getId());
@@ -178,12 +195,10 @@ public class PostServiceImpl implements PostService {
         dto.setUsername(post.getUser().getUsername());
         dto.setCreatedAt(post.getCreatedAt());
         dto.setUpdatedAt(post.getUpdatedAt());
-
-        // 카테고리를 ID로 변환해서 Set에 저장
-        dto.setCategoryIds(post.getCategories().stream()
-                .map(Category::getId)
+        dto.setRecommendationCount(post.getRecommendationCount());
+        dto.setCategoryName(post.getCategories().stream()
+                .map(Category::getName)
                 .collect(Collectors.toSet()));
-
         return dto;
     }
 }

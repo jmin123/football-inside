@@ -4,18 +4,13 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.util.Set;
 
 @Getter
 @Setter
-public class PostDto {
+public class CommentDto {
     private Long id;
-    private String title;
     private String content;
-    private Long userId;
     private String username;
-    private int recommendationCount;
-    private Set<String> categoryName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

@@ -38,6 +38,7 @@ public class Post {
     @Column(name = "recommendation_count", nullable = false)
     private int recommendationCount = 0; // 기본은 0으로 설정
 
+    @Getter
     @ManyToMany
     @JoinTable(
             name = "post_categories",

@@ -1,26 +1,24 @@
 package com.example.football_inside.controller;
 
+import com.example.football_inside.dto.CommentDto;
 import com.example.football_inside.dto.PostCreateDto;
 import com.example.football_inside.dto.PostDto;
 import com.example.football_inside.dto.PostUpdateDto;
-import com.example.football_inside.entity.Category;
 import com.example.football_inside.entity.User;
 import com.example.football_inside.exception.ResourceNotFoundException;
-import com.example.football_inside.repository.CategoryRepository;
 import com.example.football_inside.security.JwtTokenProvider;
+import com.example.football_inside.service.CommentServiceImpl;
 import com.example.football_inside.service.PostServiceImpl;
 import com.example.football_inside.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,13 +28,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/posts")
 @RequiredArgsConstructor
 public class PostController {
     private final UserService userService;
     private final PostServiceImpl postService;
-    private final CategoryRepository categoryRepository;
+    private final CommentServiceImpl commentService;
     private final JwtTokenProvider jwtTokenProvider;
 
     @PostMapping
@@ -64,23 +63,27 @@ public class PostController {
 
     @GetMapping("/{id}")
     public ResponseEntity<EntityModel<PostDto>> getPost(@PathVariable Long id) {
+        log.info("Received request for post with id: {}", id);
         PostDto post = postService.getPostById(id);
 
+        // category name을 이용하여 category id를 찾아서 추가
         EntityModel<PostDto> resource = EntityModel.of(post);
 
         resource.add(WebMvcLinkBuilder.linkTo(
                 WebMvcLinkBuilder.methodOn(this.getClass()).getPost(id)
         ).withSelfRel());
 
-        resource.add(WebMvcLinkBuilder.linkTo(
-                WebMvcLinkBuilder.methodOn(this.getClass()).getAllPosts(null)
-        ).withRel("all-posts"));
-
-        resource.add(WebMvcLinkBuilder.linkTo(
-                WebMvcLinkBuilder.methodOn(this.getClass()).updatePost(id, null, null)
-        ).withRel("update"));
-
         return ResponseEntity.ok(resource);
+    }
+
+    @GetMapping("/category/name/{categoryName}")
+    public ResponseEntity<Page<PostDto>> getPostsByCategoryName(
+            @PathVariable String categoryName,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        log.info("Received request for posts in category: {}", categoryName);
+        Page<PostDto> posts = postService.getPostsByCategoryName(categoryName, pageable);
+        log.info("Returning {} posts for category: {}", posts.getTotalElements(), categoryName);
+        return ResponseEntity.ok(posts);
     }
 
     @GetMapping
@@ -104,30 +107,9 @@ public class PostController {
         return ResponseEntity.ok(result);
     }
 
-    @GetMapping("/category/{categoryId}")
-    public ResponseEntity<PagedModel<EntityModel<PostDto>>> getPostsByCategory(
-            @PathVariable Long categoryId,
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
-            PagedResourcesAssembler<PostDto> assembler) {
-        Page<PostDto> posts = postService.getPostsByCategory(categoryId, pageable);
-        return ResponseEntity.ok(assembler.toModel(posts));
-    }
-
-    @GetMapping("/category/name/{categoryName}")
-    public ResponseEntity<?> getPostsByCategoryName(@PathVariable String categoryName,
-                                                    @RequestParam int page,
-                                                    @RequestParam int size) {
-        Category category = categoryRepository.findByName(categoryName)
-                .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + categoryName));
-
-        Long categoryId = category.getId();
-        Page<PostDto> posts = postService.getPostsByCategory(categoryId, PageRequest.of(page, size));
-        return ResponseEntity.ok(posts);
-    }
-
-
     @PutMapping("/{id}")
-    public ResponseEntity<PostDto> updatePost(@PathVariable Long id, @Valid @RequestBody PostUpdateDto post, Authentication authentication) {
+    public ResponseEntity<PostDto> updatePost(@PathVariable Long id,
+                                              @Valid @RequestBody PostUpdateDto post, Authentication authentication) {
         User user = (User) authentication.getPrincipal();
         Long userId = user.getId();
         PostDto updatedPost = postService.updatePost(id, post, userId);
@@ -168,5 +150,21 @@ public class PostController {
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    /**
+     * 댓글 영역
+     */
+    @GetMapping("/{postId}/comments")
+    public ResponseEntity<List<CommentDto>> getComments(@PathVariable Long postId) {
+        List<CommentDto> comments = commentService.getCommentsByPostId(postId);
+        return ResponseEntity.ok(comments);
+    }
+
+    @PostMapping("/{postId}/comments")
+    public ResponseEntity<CommentDto> addComment(@PathVariable Long postId, @RequestBody CommentDto commentDto, Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+        CommentDto createdComment = commentService.createComment(postId, user.getId(), commentDto.getContent());
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdComment);
     }
 }
