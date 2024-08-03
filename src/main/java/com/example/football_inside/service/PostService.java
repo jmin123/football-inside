@@ -7,7 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface PostService {
-    PostDto createPost(PostCreateDto postCreateDto, Long userId);
+    PostDto createPost(PostCreateDto postCreateDto, Long userId, Long categoryId);
 
     PostDto getPostById(Long id);
 

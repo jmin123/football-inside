@@ -9,10 +9,7 @@ import com.example.football_inside.entity.Recommendation;
 import com.example.football_inside.entity.User;
 import com.example.football_inside.exception.ResourceNotFoundException;
 import com.example.football_inside.exception.UnauthorizedException;
-import com.example.football_inside.repository.CategoryRepository;
-import com.example.football_inside.repository.PostRepository;
-import com.example.football_inside.repository.RecommendationRepository;
-import com.example.football_inside.repository.UserRepository;
+import com.example.football_inside.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,31 +31,28 @@ public class PostServiceImpl implements PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
-    private final   RecommendationRepository recommendationRepository;
+    private final RecommendationRepository recommendationRepository;
+    private final CommentRepository commentRepository;
 
     @Value("${recommendation.unrecommend.time-limit:1}")
     private long unrecommendTimeLimitMinutes;
 
     @Override
-    public PostDto createPost(PostCreateDto postDTO, Long userId) {
+    public PostDto createPost(PostCreateDto postCreateDto, Long userId, Long categoryId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User Not Found"));
 
         // ID로 카테고리를 찾아서 Set에 저장(Set에 저장하는 이유는 중복을 피하기 위해서)
-        Set<Category> categories = new HashSet<>(categoryRepository.findAllById(postDTO.getCategoryIds()));
-
-        // 카테고리의 개수와 postDTO의 카테고리 ID의 개수가 다르면 예외를 발생시킨다.
-        if (categories.size() != postDTO.getCategoryIds().size()) {
-            throw new ResourceNotFoundException("하나 이상의 카테고리를 찾을 수 없습니다.");
-        }
+        Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
         Post post = new Post();
-        post.setTitle(postDTO.getTitle());
-        post.setContent(postDTO.getContent());
+        post.setTitle(postCreateDto.getTitle());
+        post.setContent(postCreateDto.getContent());
         post.setUser(user);
-        post.setCategories(categories);
         post.setCreatedAt(LocalDateTime.now());
         post.setUpdatedAt(LocalDateTime.now());
+        post.getCategories().add(category);
 
         Post savedPost = postRepository.save(post);
         return convertToDTO(savedPost);
@@ -147,7 +141,8 @@ public class PostServiceImpl implements PostService {
 
         return convertToDTO(post);
     }
-
+    
+    // 게시글 수정
     @Override
     public PostDto updatePost(Long id, PostUpdateDto updatedPost, Long userId) {
         Post existingPost = postRepository.findById(id)
@@ -169,6 +164,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    @Transactional
     public void deletePost(Long id, Long userId) {
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
@@ -177,7 +173,11 @@ public class PostServiceImpl implements PostService {
             throw new UnauthorizedException("Not authorized to delete this post");
         }
 
-        postRepository.deleteById(id);
+        int deletedComments = commentRepository.deleteByPostId(id);
+        log.info("Deleted {} comments associated with post id: {}", deletedComments, id);
+
+            postRepository.delete(post);
+        log.info("Deleted post with id: {}", id);
     }
 
     @Override

@@ -4,8 +4,10 @@ import com.example.football_inside.dto.CommentDto;
 import com.example.football_inside.dto.PostCreateDto;
 import com.example.football_inside.dto.PostDto;
 import com.example.football_inside.dto.PostUpdateDto;
+import com.example.football_inside.entity.Post;
 import com.example.football_inside.entity.User;
 import com.example.football_inside.exception.ResourceNotFoundException;
+import com.example.football_inside.exception.UnauthorizedException;
 import com.example.football_inside.security.JwtTokenProvider;
 import com.example.football_inside.service.CommentServiceImpl;
 import com.example.football_inside.service.PostServiceImpl;
@@ -57,7 +59,16 @@ public class PostController {
         }
 
         Long userId = user.getId();
-        PostDto createdPost = postService.createPost(post, userId);
+
+        // Check if categoryIds is not empty
+        if (post.getCategoryIds().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("At least one category must be selected");
+        }
+
+        // Get the first category ID from the set
+        Long categoryId = post.getCategoryIds().iterator().next();
+
+        PostDto createdPost = postService.createPost(post, userId, categoryId);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdPost);
     }
 
@@ -107,6 +118,7 @@ public class PostController {
         return ResponseEntity.ok(result);
     }
 
+    // 수정
     @PutMapping("/{id}")
     public ResponseEntity<PostDto> updatePost(@PathVariable Long id,
                                               @Valid @RequestBody PostUpdateDto post, Authentication authentication) {
@@ -115,13 +127,32 @@ public class PostController {
         PostDto updatedPost = postService.updatePost(id, post, userId);
         return ResponseEntity.ok(updatedPost);
     }
-
+    
+    // 삭제
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePost(@PathVariable Long id, Authentication authentication) {
+        if (authentication == null) {
+            log.error("Authentication is null for delete request on post id: {}", id);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
         User user = (User) authentication.getPrincipal();
-        Long userId = user.getId();
-        postService.deletePost(id, userId);
-        return ResponseEntity.noContent().build();
+        log.info("Attempting to delete post with id: {} by user: {}", id, user.getUsername());
+
+        try {
+            postService.deletePost(id, user.getId());
+            log.info("Successfully deleted post with id: {}", id);
+            return ResponseEntity.noContent().build();
+        } catch (ResourceNotFoundException e) {
+            log.warn("Post not found with id: {}. It might have been already deleted.", id);
+            return ResponseEntity.notFound().build();
+        } catch (UnauthorizedException e) {
+            log.warn("User {} is not authorized to delete post with id: {}", user.getUsername(), id);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (Exception e) {
+            log.error("Error deleting post with id: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @GetMapping("/user/{userId}")
