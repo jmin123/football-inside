@@ -4,7 +4,6 @@ import com.example.football_inside.dto.CommentDto;
 import com.example.football_inside.dto.PostCreateDto;
 import com.example.football_inside.dto.PostDto;
 import com.example.football_inside.dto.PostUpdateDto;
-import com.example.football_inside.entity.Post;
 import com.example.football_inside.entity.User;
 import com.example.football_inside.exception.ResourceNotFoundException;
 import com.example.football_inside.exception.UnauthorizedException;
@@ -165,6 +164,9 @@ public class PostController {
 
     @PostMapping("/{postId}/recommend")
     public ResponseEntity<PostDto> recommendPost(@PathVariable Long postId, Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
         User user = (User) authentication.getPrincipal();
         PostDto updatedPost = postService.recommendPost(postId, user.getId());
         return ResponseEntity.ok(updatedPost);
@@ -174,7 +176,7 @@ public class PostController {
     public ResponseEntity<?> unrecommendPost(@PathVariable Long postId, Authentication authentication) {
         try {
             User user = (User) authentication.getPrincipal();
-            PostDto updatedPost = postService.unrecommendPost(postId, user.getId());
+            PostDto updatedPost = postService.unRecommendPost(postId, user.getId());
             return ResponseEntity.ok(updatedPost);
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

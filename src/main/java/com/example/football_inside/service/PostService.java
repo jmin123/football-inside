@@ -21,7 +21,7 @@ public interface PostService {
 
     PostDto recommendPost(Long postId, Long userId);
 
-    PostDto unrecommendPost(Long postId, Long userId);
+    PostDto unRecommendPost(Long postId, Long userId);
 
     Page<PostDto> getPostsByUser(Long userId, org.springframework.data.domain.Pageable pageable);
 }

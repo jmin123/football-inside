@@ -101,22 +101,31 @@ public class PostServiceImpl implements PostService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        if (recommendationRepository.findByPostAndUser(post, user).isEmpty()) {
-            Recommendation recommendation = new Recommendation();
-            recommendation.setPost(post);
-            recommendation.setUser(user);
-            recommendationRepository.save(recommendation);
-
-            post.setRecommendationCount(post.getRecommendationCount() + 1);
-            postRepository.save(post);
+        if (post.getUser().getId().equals(userId)) {
+            throw new IllegalStateException("You cannot recommend your own post");
         }
+
+        Optional<Recommendation> existingRecommendation = recommendationRepository.findByPostAndUser(post, user);
+
+        if (existingRecommendation.isPresent()) {
+            throw new IllegalStateException("You have already recommended this post");
+        }
+
+        Recommendation recommendation = new Recommendation();
+        recommendation.setPost(post);
+        recommendation.setUser(user);
+        recommendation.setCreatedAt(LocalDateTime.now());
+        recommendationRepository.save(recommendation);
+
+        post.setRecommendationCount(post.getRecommendationCount() + 1);
+        postRepository.save(post);
 
         return convertToDTO(post);
     }
 
     @Transactional
     @Override
-    public PostDto unrecommendPost(Long postId, Long userId) {
+    public PostDto unRecommendPost(Long postId, Long userId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
 
@@ -176,7 +185,10 @@ public class PostServiceImpl implements PostService {
         int deletedComments = commentRepository.deleteByPostId(id);
         log.info("Deleted {} comments associated with post id: {}", deletedComments, id);
 
-            postRepository.delete(post);
+        recommendationRepository.deleteByPostId(id);
+        log.info("Deleted recommendations associated with post id: {}", id);
+
+        postRepository.delete(post);
         log.info("Deleted post with id: {}", id);
     }
 
