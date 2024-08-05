@@ -20,8 +20,11 @@ public class JwtTokenProvider {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
-    @Value("${jwt.expiration}")
-    private int jwtExpiration;
+    @Value("${jwt.expiration.short}")
+    private long jwtExpirationShort;
+
+    @Value("${jwt.expiration.long}")
+    private long jwtExpirationLong;
 
     private Key key;
 
@@ -31,9 +34,9 @@ public class JwtTokenProvider {
         this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateToken(UserDetails userDetails) {
+    public String generateToken(UserDetails userDetails, boolean rememberMe) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + jwtExpiration);
+        Date expiryDate = new Date(now.getTime() + (rememberMe ? jwtExpirationLong : jwtExpirationShort));
 
         return Jwts.builder()
                 .setSubject(userDetails.getUsername())
@@ -46,10 +49,8 @@ public class JwtTokenProvider {
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
-            log.info("JWT token is valid");
             return true;
         } catch (JwtException | IllegalArgumentException e) {
-            log.info("Invalid JWT token");
             return false;
         }
     }

@@ -1,6 +1,5 @@
 package com.example.football_inside.controller;
 
-import com.example.football_inside.dto.CommentDto;
 import com.example.football_inside.dto.PostCreateDto;
 import com.example.football_inside.dto.PostDto;
 import com.example.football_inside.dto.PostUpdateDto;
@@ -8,7 +7,6 @@ import com.example.football_inside.entity.User;
 import com.example.football_inside.exception.ResourceNotFoundException;
 import com.example.football_inside.exception.UnauthorizedException;
 import com.example.football_inside.security.JwtTokenProvider;
-import com.example.football_inside.service.CommentServiceImpl;
 import com.example.football_inside.service.PostServiceImpl;
 import com.example.football_inside.service.UserService;
 import jakarta.validation.Valid;
@@ -36,7 +34,6 @@ import java.util.stream.Collectors;
 public class PostController {
     private final UserService userService;
     private final PostServiceImpl postService;
-    private final CommentServiceImpl commentService;
     private final JwtTokenProvider jwtTokenProvider;
 
     @PostMapping
@@ -183,21 +180,5 @@ public class PostController {
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.notFound().build();
         }
-    }
-
-    /**
-     * 댓글 영역
-     */
-    @GetMapping("/{postId}/comments")
-    public ResponseEntity<List<CommentDto>> getComments(@PathVariable Long postId) {
-        List<CommentDto> comments = commentService.getCommentsByPostId(postId);
-        return ResponseEntity.ok(comments);
-    }
-
-    @PostMapping("/{postId}/comments")
-    public ResponseEntity<CommentDto> addComment(@PathVariable Long postId, @RequestBody CommentDto commentDto, Authentication authentication) {
-        User user = (User) authentication.getPrincipal();
-        CommentDto createdComment = commentService.createComment(postId, user.getId(), commentDto.getContent());
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdComment);
     }
 }

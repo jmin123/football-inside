@@ -4,7 +4,6 @@ import com.example.football_inside.dto.LoginDto;
 import com.example.football_inside.dto.UserRegistrationDto;
 import com.example.football_inside.entity.User;
 import com.example.football_inside.response.LoginResponse;
-import com.example.football_inside.service.UserService;
 import com.example.football_inside.service.UserServiceImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +23,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody LoginDto loginDto) {
         try {
-            LoginResponse response = userService.loginUser(loginDto.getEmail(), loginDto.getPassword());
+            LoginResponse response = userService.loginUser(loginDto.getEmail(), loginDto.getPassword(), loginDto.isRememberMe());
             log.info("Login successful for user: {}", loginDto.getEmail());
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {

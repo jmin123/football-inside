@@ -33,8 +33,9 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
     }
 
+
     @Override
-    public LoginResponse loginUser(String email, String password) {
+    public LoginResponse loginUser(String email, String password, boolean rememberMe) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 
@@ -42,7 +43,7 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Invalid password");
         }
 
-        String token = jwtTokenProvider.generateToken(user);
+        String token = jwtTokenProvider.generateToken(user, rememberMe);
 
         LoginResponse response = new LoginResponse();
         response.setId(user.getId());
