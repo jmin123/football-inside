@@ -21,7 +21,8 @@ public class Category {
     @Column(nullable = false, unique = true, length = 50)
     private String name;
 
-    private String description;
+    @Column(nullable = false, unique = true, length = 50)
+    private String name_kr;
 
     @ManyToMany(mappedBy = "categories")
     private Set<Post> posts = new HashSet<>();

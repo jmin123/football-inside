@@ -56,12 +56,10 @@ public class PostController {
 
         Long userId = user.getId();
 
-        // Check if categoryIds is not empty
         if (post.getCategoryIds().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("At least one category must be selected");
         }
 
-        // Get the first category ID from the set
         Long categoryId = post.getCategoryIds().iterator().next();
 
         PostDto createdPost = postService.createPost(post, userId, categoryId);
