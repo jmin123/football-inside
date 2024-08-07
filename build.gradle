@@ -25,6 +25,13 @@ dependencies {
 	implementation 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	// bucket4j
+	implementation 'com.giffing.bucket4j.spring.boot.starter:bucket4j-spring-boot-starter:0.9.0'
+	// caffeine
+	implementation 'org.springframework.boot:spring-boot-starter-cache'
+	implementation 'com.github.ben-manes.caffeine:caffeine'
+	// jsoup
+	implementation 'org.jsoup:jsoup:1.15.3'
 	// hateoas
 	implementation 'org.springframework.boot:spring-boot-starter-hateoas'
 	// validation

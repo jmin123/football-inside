@@ -10,4 +10,5 @@ public interface UserService {
     LoginResponse loginUser(String email, String password, boolean rememberMe);
     boolean isUsernameAvailable(String username);
     boolean isEmailAvailable(String email);
+    String refreshAccessToken(String refreshToken);
 }

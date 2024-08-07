@@ -20,11 +20,14 @@ public class JwtTokenProvider {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
-    @Value("${jwt.expiration.short}")
-    private long jwtExpirationShort;
+    @Value("${jwt.expiration.access}")
+    private long jwtExpirationAccess;
 
-    @Value("${jwt.expiration.long}")
-    private long jwtExpirationLong;
+    @Value("${jwt.expiration.refresh.short}")
+    private long jwtExpirationRefreshShort;
+
+    @Value("${jwt.expiration.refresh.long}")
+    private long jwtExpirationRefreshLong;
 
     private Key key;
 
@@ -34,9 +37,18 @@ public class JwtTokenProvider {
         this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateToken(UserDetails userDetails, boolean rememberMe) {
+    public String generateAccessToken(UserDetails userDetails) {
+        return generateToken(userDetails, jwtExpirationAccess);
+    }
+
+    public String generateRefreshToken(UserDetails userDetails, boolean rememberMe) {
+        long expiration = rememberMe ? jwtExpirationRefreshLong : jwtExpirationRefreshShort;
+        return generateToken(userDetails, expiration);
+    }
+
+    private String generateToken(UserDetails userDetails, long expiration) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + (rememberMe ? jwtExpirationLong : jwtExpirationShort));
+        Date expiryDate = new Date(now.getTime() + expiration);
 
         return Jwts.builder()
                 .setSubject(userDetails.getUsername())

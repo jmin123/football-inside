@@ -76,12 +76,12 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public Page<PostDto> getPostsByCategoryName(String categoryName, Pageable pageable) {
-        log.info("Fetching posts for category: {}", categoryName);
+        // log.info("Fetching posts for category: {}", categoryName);
         Category category = categoryRepository.findByNameIgnoreCase(categoryName)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + categoryName));
 
         Page<Post> posts = postRepository.findByCategoriesContaining(category, pageable);
-        log.info("Found {} posts for category: {}", posts.getTotalElements(), categoryName);
+        // log.info("Found {} posts for category: {}", posts.getTotalElements(), categoryName);
 
         return posts.map(this::convertToDTO);
     }
@@ -108,7 +108,7 @@ public class PostServiceImpl implements PostService {
         Optional<Recommendation> existingRecommendation = recommendationRepository.findByPostAndUser(post, user);
 
         if (existingRecommendation.isPresent()) {
-            throw new IllegalStateException("You have already recommended this post");
+            throw new IllegalStateException("이미 추천한 게시글입니다.");
         }
 
         Recommendation recommendation = new Recommendation();
@@ -182,14 +182,9 @@ public class PostServiceImpl implements PostService {
             throw new UnauthorizedException("Not authorized to delete this post");
         }
 
-        int deletedComments = commentRepository.deleteByPostId(id);
-        log.info("Deleted {} comments associated with post id: {}", deletedComments, id);
-
         recommendationRepository.deleteByPostId(id);
-        log.info("Deleted recommendations associated with post id: {}", id);
 
         postRepository.delete(post);
-        log.info("Deleted post with id: {}", id);
     }
 
     @Override

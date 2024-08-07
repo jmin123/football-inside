@@ -15,5 +15,6 @@ public class LoginResponse {
     private String username;
     private String profilePicture;
     private Set<String> roles;
-    private String token;
+    private String accessToken;
+    private String refreshToken;
 }

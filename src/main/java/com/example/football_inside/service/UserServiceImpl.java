@@ -33,7 +33,6 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
     }
 
-
     @Override
     public LoginResponse loginUser(String email, String password, boolean rememberMe) {
         User user = userRepository.findByEmail(email)
@@ -43,7 +42,8 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Invalid password");
         }
 
-        String token = jwtTokenProvider.generateToken(user, rememberMe);
+        String accessToken = jwtTokenProvider.generateAccessToken(user);
+        String refreshToken = jwtTokenProvider.generateRefreshToken(user, rememberMe);
 
         LoginResponse response = new LoginResponse();
         response.setId(user.getId());
@@ -51,7 +51,8 @@ public class UserServiceImpl implements UserService {
         response.setEmail(user.getEmail());
         response.setProfilePicture(user.getProfilePicture());
         response.setRoles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()));
-        response.setToken(token);
+        response.setAccessToken(accessToken);
+        response.setRefreshToken(refreshToken);
 
         log.info("User logged in successfully: {}", user.getUsername());
 
@@ -92,5 +93,16 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean isEmailAvailable(String email) {
         return userRepository.findByEmail(email).isEmpty();
+    }
+
+    @Override
+    public String refreshAccessToken(String refreshToken) {
+        if (jwtTokenProvider.validateToken(refreshToken)) {
+            String username = jwtTokenProvider.getUsernameFromJWT(refreshToken);
+            User user = getUserByUsername(username);
+            return jwtTokenProvider.generateAccessToken(user);
+        } else {
+            throw new RuntimeException("Invalid refresh token");
+        }
     }
 }
