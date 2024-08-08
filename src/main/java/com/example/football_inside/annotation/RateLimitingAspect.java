@@ -2,28 +2,19 @@ package com.example.football_inside.annotation;
 
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.ConsumptionProbe;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Aspect
 @Component
 @Slf4j
 public class RateLimitingAspect {
     private final Bucket bucket;
-    private final Map<String, Instant> blockList = new ConcurrentHashMap<>();
 
     public RateLimitingAspect(Bucket loginBucket) {
         this.bucket = loginBucket;

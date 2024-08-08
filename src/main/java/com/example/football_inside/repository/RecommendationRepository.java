@@ -7,10 +7,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface RecommendationRepository extends JpaRepository<Recommendation, Long> {
     Optional<Recommendation> findByPostAndUser(Post post, User user);
+    List<Recommendation> findByPostId(Long postId);
 
     @Modifying
     @Query("DELETE FROM Recommendation r WHERE r.post.id = :postId")

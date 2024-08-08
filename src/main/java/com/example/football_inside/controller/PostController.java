@@ -126,25 +126,19 @@ public class PostController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePost(@PathVariable Long id, Authentication authentication) {
         if (authentication == null) {
-            log.error("Authentication is null for delete request on post id: {}", id);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         User user = (User) authentication.getPrincipal();
-        log.info("Attempting to delete post with id: {} by user: {}", id, user.getUsername());
 
         try {
             postService.deletePost(id, user.getId());
-            log.info("Successfully deleted post with id: {}", id);
             return ResponseEntity.noContent().build();
         } catch (ResourceNotFoundException e) {
-            log.warn("Post not found with id: {}. It might have been already deleted.", id);
             return ResponseEntity.notFound().build();
         } catch (UnauthorizedException e) {
-            log.warn("User {} is not authorized to delete post with id: {}", user.getUsername(), id);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (Exception e) {
-            log.error("Error deleting post with id: {}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -156,15 +150,20 @@ public class PostController {
         return ResponseEntity.ok(postService.getPostsByUser(userId, pageable));
     }
 
-
     @PostMapping("/{postId}/recommend")
-    public ResponseEntity<PostDto> recommendPost(@PathVariable Long postId, Authentication authentication) {
+    public ResponseEntity<?> recommendPost(@PathVariable Long postId, Authentication authentication) {
         if (authentication == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         User user = (User) authentication.getPrincipal();
-        PostDto updatedPost = postService.recommendPost(postId, user.getId());
-        return ResponseEntity.ok(updatedPost);
+        try {
+            PostDto updatedPost = postService.recommendPost(postId, user.getId());
+            return ResponseEntity.ok(updatedPost);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
     }
 
     @PostMapping("/{postId}/unrecommend")
@@ -179,4 +178,11 @@ public class PostController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @GetMapping("/{postId}/recommendations")
+    public ResponseEntity<List<String>> getRecommendations(@PathVariable Long postId) {
+        List<String> usernames = postService.getRecommendationUsernames(postId);
+        return ResponseEntity.ok(usernames);
+    }
+
 }

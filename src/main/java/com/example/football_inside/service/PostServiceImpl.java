@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -76,12 +77,10 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public Page<PostDto> getPostsByCategoryName(String categoryName, Pageable pageable) {
-        // log.info("Fetching posts for category: {}", categoryName);
         Category category = categoryRepository.findByNameIgnoreCase(categoryName)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + categoryName));
 
         Page<Post> posts = postRepository.findByCategoriesContaining(category, pageable);
-        // log.info("Found {} posts for category: {}", posts.getTotalElements(), categoryName);
 
         return posts.map(this::convertToDTO);
     }
@@ -102,7 +101,7 @@ public class PostServiceImpl implements PostService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (post.getUser().getId().equals(userId)) {
-            throw new IllegalStateException("You cannot recommend your own post");
+            throw new IllegalStateException("자신의 게시글은 추천할 수 없습니다.");
         }
 
         Optional<Recommendation> existingRecommendation = recommendationRepository.findByPostAndUser(post, user);
@@ -150,15 +149,24 @@ public class PostServiceImpl implements PostService {
 
         return convertToDTO(post);
     }
-    
+
+    @Override
+    public List<String> getRecommendationUsernames(Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("게시글이 존재하지 않음"));
+        return recommendationRepository.findByPostId(postId).stream()
+                .map(recommendation -> recommendation.getUser().getUsername())
+                .collect(Collectors.toList());
+    }
+
+
     // 게시글 수정
     @Override
     public PostDto updatePost(Long id, PostUpdateDto updatedPost, Long userId) {
         Post existingPost = postRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
-
+                .orElseThrow(() -> new ResourceNotFoundException("게시글이 존재하지 않음"));
         if (!existingPost.getUser().getId().equals(userId)) {
-            throw new UnauthorizedException("Not authorized to update this post");
+            throw new UnauthorizedException("해당 게시글을 수정할 권한 없음");
         }
 
         existingPost.setTitle(updatedPost.getTitle());

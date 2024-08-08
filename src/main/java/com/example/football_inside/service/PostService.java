@@ -6,6 +6,8 @@ import com.example.football_inside.dto.PostUpdateDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
+
 public interface PostService {
     PostDto createPost(PostCreateDto postCreateDto, Long userId, Long categoryId);
 
@@ -22,6 +24,8 @@ public interface PostService {
     PostDto recommendPost(Long postId, Long userId);
 
     PostDto unRecommendPost(Long postId, Long userId);
+
+    List<String> getRecommendationUsernames(Long postId);
 
     Page<PostDto> getPostsByUser(Long userId, org.springframework.data.domain.Pageable pageable);
 }

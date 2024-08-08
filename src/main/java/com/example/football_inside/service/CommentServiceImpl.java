@@ -112,6 +112,7 @@ public class CommentServiceImpl implements CommentService {
         dto.setContent(comment.getContent());
         dto.setUsername(comment.getUser().getUsername());
         dto.setCreatedAt(comment.getCreatedAt());
+        dto.setUpdatedAt(comment.getUpdatedAt());
         return dto;
     }
 }
