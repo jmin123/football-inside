@@ -11,10 +11,14 @@ import com.example.football_inside.repository.PostRepository;
 import com.example.football_inside.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
@@ -55,7 +59,13 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public List<CommentDto> getCommentsByPostId(Long postId) {
         List<Comment> comments = commentRepository.findByPostIdOrderByCreatedAtDesc(postId);
-        return comments.stream().map(this::convertToDto).toList();
+        return comments.stream().map(this::convertToDto).collect(Collectors.toList());
+    }
+
+    @Cacheable(value = "comments", key = "#postId + #pageable.pageNumber")
+    @Override
+    public Page<CommentDto> getCommentsByPostId(Long postId, Pageable pageable) {
+        return commentRepository.findCommentDtosByPostId(postId, pageable);
     }
 
     @Override

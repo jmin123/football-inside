@@ -2,6 +2,7 @@ package com.example.football_inside.service;
 
 import com.example.football_inside.dto.PostCreateDto;
 import com.example.football_inside.dto.PostDto;
+import com.example.football_inside.dto.PostSummaryDto;
 import com.example.football_inside.dto.PostUpdateDto;
 import com.example.football_inside.entity.Category;
 import com.example.football_inside.entity.Post;
@@ -13,6 +14,7 @@ import com.example.football_inside.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -85,6 +87,11 @@ public class PostServiceImpl implements PostService {
         return posts.map(this::convertToDTO);
     }
 
+    @Cacheable(value = "postSummaries", key = "#categoryName + #pageable.pageNumber")
+    @Override
+    public Page<PostSummaryDto> getPostSummariesByCategoryName(String categoryName, Pageable pageable) {
+        return postRepository.findPostSummariesByCategoryName(categoryName, pageable);
+    }
 
     @Override
     public Page<PostDto> getAllPosts(Pageable pageable) {

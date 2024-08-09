@@ -2,6 +2,7 @@ package com.example.football_inside.service;
 
 import com.example.football_inside.dto.PostCreateDto;
 import com.example.football_inside.dto.PostDto;
+import com.example.football_inside.dto.PostSummaryDto;
 import com.example.football_inside.dto.PostUpdateDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,6 +16,7 @@ public interface PostService {
 
     Page<PostDto> getPostsByCategoryName(String categoryName, Pageable pageable);
 
+    Page<PostSummaryDto> getPostSummariesByCategoryName(String categoryName, Pageable pageable);
     Page<PostDto> getAllPosts(Pageable pageable);
 
     PostDto updatePost(Long id, PostUpdateDto postUpdateDto, Long userId);

@@ -2,6 +2,7 @@ package com.example.football_inside.controller;
 
 import com.example.football_inside.dto.PostCreateDto;
 import com.example.football_inside.dto.PostDto;
+import com.example.football_inside.dto.PostSummaryDto;
 import com.example.football_inside.dto.PostUpdateDto;
 import com.example.football_inside.entity.User;
 import com.example.football_inside.exception.ResourceNotFoundException;
@@ -81,12 +82,13 @@ public class PostController {
         return ResponseEntity.ok(resource);
     }
 
+    // PostController.java
     @GetMapping("/category/name/{categoryName}")
-    public ResponseEntity<Page<PostDto>> getPostsByCategoryName(
+    public ResponseEntity<Page<PostSummaryDto>> getPostsByCategoryName(
             @PathVariable String categoryName,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         log.info("Received request for posts in category: {}", categoryName);
-        Page<PostDto> posts = postService.getPostsByCategoryName(categoryName, pageable);
+        Page<PostSummaryDto> posts = postService.getPostSummariesByCategoryName(categoryName, pageable);
         log.info("Returning {} posts for category: {}", posts.getTotalElements(), categoryName);
         return ResponseEntity.ok(posts);
     }

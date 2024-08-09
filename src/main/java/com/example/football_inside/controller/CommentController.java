@@ -5,6 +5,10 @@ import com.example.football_inside.entity.User;
 import com.example.football_inside.service.CommentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -21,8 +25,10 @@ public class CommentController {
     private final CommentService commentService;
 
     @GetMapping
-    public ResponseEntity<List<CommentDto>> getComments(@PathVariable Long postId) {
-        List<CommentDto> comments = commentService.getCommentsByPostId(postId);
+    public ResponseEntity<Page<CommentDto>> getComments(
+            @PathVariable Long postId,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        Page<CommentDto> comments = commentService.getCommentsByPostId(postId, pageable);
         return ResponseEntity.ok(comments);
     }
 
